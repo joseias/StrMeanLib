@@ -1,4 +1,4 @@
-# Java implementation of several heuristics to compute the median string:
+## Java implementation of several heuristics to compute the median string:
 
 Modify conf.properties to select the algorithm, scoring matrix, etc.
 
