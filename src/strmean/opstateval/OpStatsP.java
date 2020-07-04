@@ -156,7 +156,7 @@ public class OpStatsP extends OpStats {
                     this.source[pos],
                     this.sDif.getSymbol(i),
                     pos,
-                    0,
+                    0, /* targetPos is not used, thus 0*/
                     new OpInfo(0.0f, 0, tmpQuality)));
         }
         else {
@@ -166,7 +166,7 @@ public class OpStatsP extends OpStats {
                         this.source[pos],
                         this.sDif.getSymbol(i),
                         pos,
-                        0,
+                        0, /* targetPos is not used, thus 0*/
                         new OpInfo(0.0f, 0, tmpQuality)));
             }
         }
@@ -178,7 +178,7 @@ public class OpStatsP extends OpStats {
                     this.source[pos],
                     this.source[pos],
                     pos,
-                    0,
+                    0, /* targetPos is not used, thus 0*/
                     new OpInfo(0.0f, 0, tmpQuality)));
 
         }
@@ -189,7 +189,7 @@ public class OpStatsP extends OpStats {
                         this.source[pos],
                         this.source[pos],
                         pos,
-                        0,
+                        0, /* targetPos is not used, thus 0*/
                         new OpInfo(0.0f, 0, tmpQuality)));
             }
         }
