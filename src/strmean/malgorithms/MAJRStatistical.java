@@ -54,7 +54,7 @@ public class MAJRStatistical extends MAlgorithm {
 
         String logs;
 
-        boolean changed;
+        boolean improved;
         boolean keepTryingOps;
 
         Example actualCandidate = new Example(seed);
@@ -84,7 +84,7 @@ public class MAJRStatistical extends MAlgorithm {
         //</editor-fold>
         do {
             cEpoch++;
-            changed = false;
+            improved = false;
 
             //<editor-fold defaultstate="collapsed" desc="get and sort edit operations">
             ops = opStatsCandidate.getOperations();
@@ -135,7 +135,7 @@ public class MAJRStatistical extends MAlgorithm {
 
                             bestExample = actualCandidate;
                             opStatsBestExample = opStatsCandidate;
-                            changed = true;
+                            improved = true;
 
                             String info = meanOld + " " + meanNew + " " + deltha + " " + expectedV + " " + stdvNew + " " + totalDist;
                             logs = Integer.toString(opPos) + "-" + op.toString() + " " + info;
@@ -155,11 +155,11 @@ public class MAJRStatistical extends MAlgorithm {
                     cOps++;
                 }
 
-                keepTryingOps = !changed && ((maxOps <= 0) || (maxOps > 0 && cOps < maxOps));
+                keepTryingOps = !improved && ((maxOps <= 0) || (maxOps > 0 && cOps < maxOps));
             }
             //</editor-fold>
             /* continue if there was an improvement, or max Epoch are reached, if specified*/
-        } while (changed == true && ((maxEpoch <= 0) || (maxEpoch > 0 && cEpoch < maxEpoch)));
+        } while (improved == true && ((maxEpoch <= 0) || (maxEpoch > 0 && cEpoch < maxEpoch)));
 
         MAResult result = new MAResult();
         result.meanExample = bestExample;

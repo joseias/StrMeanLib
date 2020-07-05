@@ -32,11 +32,16 @@ public class MACardenas extends MAFischer2000 {
         c_minFreq = (double) p.get(JConstants.MIN_FREC);
     }
 
+
     /**
      * Given all the possible edit operations, return the best for each
      * position.
-     *
+     * 
+     * @param opStats
+     * @param DBSize
+     * @param p
      * @return
+     * @throws java.lang.Exception
      */
     @Override
     protected List<Operation> selectOperations(OpStats opStats, int DBSize, Properties p) throws Exception {

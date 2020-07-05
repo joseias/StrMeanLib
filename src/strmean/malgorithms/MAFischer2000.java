@@ -32,7 +32,7 @@ public class MAFischer2000 extends MAlgorithm {
         //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         opStatsTemplate = JUtils.newInstance(OpStats.class, p.getProperty(JConstants.OPS_STAT_EVALUATOR));
         //</editor-fold>
-        boolean changed;
+        boolean improved;
         Example actualCandidate = new Example(seed);
         Example bestExample = new Example(actualCandidate);
         List<Operation> ops;
@@ -50,7 +50,7 @@ public class MAFischer2000 extends MAlgorithm {
         procExamples.put(new String(bestExample.sequence), bestExample);
         //</editor-fold>
         do {
-            changed = false;
+            improved = false;
 
             //<editor-fold defaultstate="collapsed" desc="select the operations to be applied">
             ops = this.selectOperations(opStatsCandidate, BD.size(), p);
@@ -73,11 +73,11 @@ public class MAFischer2000 extends MAlgorithm {
                     bestExample = actualCandidate;
                     opStatsBestExample = opStatsCandidate;
 
-                    changed = true;
+                    improved = true;
                 }
             }
             //</editor-fold>
-        } while (changed == true);
+        } while (improved == true);
 
         MAResult result = new MAResult();
         result.meanExample = bestExample;
@@ -112,9 +112,9 @@ public class MAFischer2000 extends MAlgorithm {
     }
 
     /**
-     * Dado el conjunto de todas las operaciones, devuelve la mejor en cada
-     * posicion.
-     *
+     * Given all the possible edit operations, return the best for each
+     * position.
+     * 
      * @param opStats
      * @param DBSize
      * @param p
