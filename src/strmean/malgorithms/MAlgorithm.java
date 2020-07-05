@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package strmean.malgorithms;
 
 import java.util.List;
@@ -13,7 +9,7 @@ import strmean.data.MAResult;
  *
  * @author jabreu
  */
-public abstract class MAlgorithm
-{    
-    public abstract MAResult getMean(List<Example> a_BD, Example a_seed,Properties p) throws Exception;
+public abstract class MAlgorithm {
+
+    public abstract MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception;
 }

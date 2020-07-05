@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package strmean.malgorithms;
 
 import java.util.ArrayList;
@@ -20,264 +16,234 @@ import strmean.main.JConstants;
 import strmean.main.JUtils;
 import strmean.opstateval.OpStats;
 
-/**
- *
- * @author jabreu
- */
-public class MAFischer2000 extends MAlgorithm
-{
+public class MAFischer2000 extends MAlgorithm {
+
     OpStats opStatsTemplate;
-            
+
     @Override
-    public MAResult getMean(List<Example> a_BD, Example a_seed,Properties p) throws Exception
-    {
-        
+    public MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception {
+
         //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
-        opStatsTemplate=(OpStats)JUtils.buildInstanceFromType(p.getProperty(JConstants.OPS_STAT_EVALUATOR));
+        opStatsTemplate = JUtils.newInstance(OpStats.class, p.getProperty(JConstants.OPS_STAT_EVALUATOR));
         //</editor-fold>
-        boolean m_changed;
-        Example m_actualCandidate=new Example(a_seed);
-        Example m_bestExample=new Example(m_actualCandidate);
-        List<Operation> m_ops;
-        HashMap<String,Example>  m_procExamples=new HashMap<>();
-        
+        boolean changed;
+        Example actualCandidate = new Example(seed);
+        Example bestExample = new Example(actualCandidate);
+        List<Operation> ops;
+        HashMap<String, Example> procExamples = new HashMap<>();
+
         OpStats opStatsCandidate;
         OpStats opStatsBestExample;
 
-                
-        int totalDist=0;
+        int totalDist = 0;
         //<editor-fold defaultstate="collapsed" desc="Calcular distancias y estadisticas">
-        opStatsCandidate=this.testExample(m_bestExample, a_BD, p);
-        totalDist=totalDist+opStatsCandidate.totalDist;
-        opStatsBestExample=opStatsCandidate;
-        
-        m_procExamples.put(new String(m_bestExample.sequence), m_bestExample);
+        opStatsCandidate = this.testExample(bestExample, BD, p);
+        totalDist = totalDist + opStatsCandidate.totalDist;
+        opStatsBestExample = opStatsCandidate;
+
+        procExamples.put(new String(bestExample.sequence), bestExample);
         //</editor-fold>
-        do
-        {
-            m_changed=false;
-            
+        do {
+            changed = false;
+
             //<editor-fold defaultstate="collapsed" desc="Obtener operaciones a aplicar">
-            m_ops=this.selectOperations(opStatsCandidate,a_BD.size(), p);
-   
+            ops = this.selectOperations(opStatsCandidate, BD.size(), p);
+
             //</editor-fold>
- 
             //<editor-fold defaultstate="collapsed" desc="Obtener nueva candidata">
-            m_actualCandidate=m_bestExample.applyOperations(m_ops);
+            actualCandidate = bestExample.applyOperations(ops);
             //</editor-fold>
-            
+
             //<editor-fold defaultstate="collapsed" desc="Probar candidata">
-            String key=new String(m_actualCandidate.sequence);
-            if(!m_procExamples.containsKey(key))
-            {
+            String key = new String(actualCandidate.sequence);
+            if (!procExamples.containsKey(key)) {
                 /*Si esta en la tabla no deberia ser mejor que bestExample*/
-                opStatsCandidate = this.testExample(m_actualCandidate, a_BD, p);
-                totalDist=totalDist+opStatsCandidate.totalDist;
-                
-                m_procExamples.put(key,m_actualCandidate);
+                opStatsCandidate = this.testExample(actualCandidate, BD, p);
+                totalDist = totalDist + opStatsCandidate.totalDist;
 
-                if(opStatsBestExample.sumDist>opStatsCandidate.sumDist)
-                {
-                    m_bestExample=m_actualCandidate;
-                    opStatsBestExample=opStatsCandidate;
-                    
-                    m_changed=true;
-                }         
-            }     
-            //</editor-fold>
-        }
-        while(m_changed==true);
-        
-        MAResult result=new MAResult();
-        result.meanExample=m_bestExample;
-        result.sumDist=opStatsBestExample.sumDist;
-        result.totalDist=totalDist;
+                procExamples.put(key, actualCandidate);
 
-        return result;    
-    }
-    
-    private OpStats testExample(Example a_candidate,List<Example> a_BD,Properties p)
-    {
-        
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
-        EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
-        //</editor-fold>
-        
-        
-        OpStats opStats=opStatsTemplate.newInstance();
-        opStats.init(a_candidate, ed._sd,a_BD.size());
-        
-        EDResult edR;
-        
-        for(Example e:a_BD)
-        {
-            edR=ed.dEdition(a_candidate, e, true);
-            opStats.totalDist++;
-            opStats.sumDist=opStats.sumDist+edR.dist;
-            
-            for(Operation op:edR.getOperations()){
-                opStats.addOperation(op);
-            }
-        }
-        
-        return opStats;
-    }
-    
-    /**
-     * Dado el conjunto de todas las operaciones, devuelve la mejor en cada posicion.
-     * @param opStats
-     * @param a_DBSize
-     * @return 
-     * @throws java.lang.Exception 
-     */
-    protected List<Operation> selectOperations(OpStats opStats,int a_DBSize, Properties p) throws Exception
-    {
-        List<Operation> m_ops = opStats.getOperations();
-        
-        ArrayList[] m_posOps=new ArrayList[opStats.ex.sequence.length+1];
-        ArrayList[] m_posOpsI=new ArrayList[opStats.ex.sequence.length+1];
-        
-        List<Operation> m_selectedOps=new ArrayList<>(opStats.ex.sequence.length);
-        
-        //<editor-fold defaultstate="collapsed" desc="Carga dinamica del comparador de operaciones">
-        String m_cmpType=p.getProperty(JConstants.COMPARATOR_OPS);
-        Comparator<Operation> m_comparator=(Comparator<Operation>)JUtils.buildInstanceFromType(m_cmpType);
-        //</editor-fold>
-        
-        //<editor-fold defaultstate="collapsed" desc="Inicializar ">
-        for(int i=0;i<m_posOps.length;i++)
-        {
-            m_posOps[i]=new ArrayList<>();
-            m_posOpsI[i]=new ArrayList<>();
-        }       
-        //</editor-fold>
-        
-        //<editor-fold defaultstate="collapsed" desc="Colocar cada operacion en la lista correspondiente a su posicion">
-        int m_pos;
-        
-        for(Operation op:m_ops)
-        {
-            m_pos=op.posSource;
-            if(op.type=='i')
-            {
-                m_posOpsI[m_pos].add(op);
-            }
-            else
-            {
-                m_posOps[m_pos].add(op);
-            }
-            
-        }      
-        //</editor-fold>
-        
-        //<editor-fold defaultstate="collapsed" desc="Ordenar las operaciones de cada posicion de acuerdo a su "goodness index" y seleccionarla">
-        Operation m_tmp;
-        for(int i=0;i<m_posOps.length;i++)
-        {
-            //<editor-fold defaultstate="collapsed" desc="Procesar inserciones">
-             if(!m_posOpsI[i].isEmpty())
-            {   
-                Collections.sort(m_posOpsI[i],m_comparator);
-                m_tmp=(Operation)m_posOpsI[i].get(0);
-                /*Esto es para que quede igual que la implementacion de JMediaCadenas_20120926...*/
-                if(m_tmp.opInfo.quality>=a_DBSize/2)
-                {
-                    m_selectedOps.add(m_tmp);
+                if (opStatsBestExample.sumDist > opStatsCandidate.sumDist) {
+                    bestExample = actualCandidate;
+                    opStatsBestExample = opStatsCandidate;
+
+                    changed = true;
                 }
             }
             //</editor-fold>
-           
-            //<editor-fold defaultstate="collapsed" desc="Procesar sustituciones y borrados">
-            if(!m_posOps[i].isEmpty()) /*Deberia ocurrir siempre...salvo quizas en la ultima posicion*/
-            {
-                Collections.sort(m_posOps[i],m_comparator);
-                m_tmp=(Operation)m_posOps[i].get(0);
-                m_selectedOps.add(m_tmp);
+        } while (changed == true);
+
+        MAResult result = new MAResult();
+        result.meanExample = bestExample;
+        result.sumDist = opStatsBestExample.sumDist;
+        result.totalDist = totalDist;
+
+        return result;
+    }
+
+    private OpStats testExample(Example candidate, List<Example> BD, Properties p) {
+
+        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
+        //</editor-fold>
+
+        OpStats opStats = opStatsTemplate.newInstance();
+        opStats.init(candidate, ed._sd, BD.size());
+
+        EDResult edR;
+
+        for (Example e : BD) {
+            edR = ed.dEdition(candidate, e, true);
+            opStats.totalDist++;
+            opStats.sumDist = opStats.sumDist + edR.dist;
+
+            for (Operation op : edR.getOperations()) {
+                opStats.addOperation(op);
             }
-             //</editor-fold> 
+        }
+
+        return opStats;
+    }
+
+    /**
+     * Dado el conjunto de todas las operaciones, devuelve la mejor en cada
+     * posicion.
+     *
+     * @param opStats
+     * @param DBSize
+     * @param p
+     * @return
+     * @throws java.lang.Exception
+     */
+    protected List<Operation> selectOperations(OpStats opStats, int DBSize, Properties p) throws Exception {
+        List<Operation> ops = opStats.getOperations();
+
+        ArrayList[] posOps = new ArrayList[opStats.ex.sequence.length + 1];
+        ArrayList[] posOpsI = new ArrayList[opStats.ex.sequence.length + 1];
+
+        List<Operation> selectedOps = new ArrayList<>(opStats.ex.sequence.length);
+
+        //<editor-fold defaultstate="collapsed" desc="Carga dinamica del comparador de operaciones">
+        String cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
+        Comparator<Operation> comparator = JUtils.newInstance(Comparator.class, cmpType);
+        //</editor-fold>
+
+        //<editor-fold defaultstate="collapsed" desc="Inicializar ">
+        for (int i = 0; i < posOps.length; i++) {
+            posOps[i] = new ArrayList<>();
+            posOpsI[i] = new ArrayList<>();
         }
         //</editor-fold>
-       // printOperations(m_selectedOps);
-        return m_selectedOps;
-    }
-    
-    private void printOperations(ArrayList<Operation> a_ops)
-    {
-        for(Operation op:a_ops)
-        {
-            char a=' ';
-            char b=' ';
-            
-            switch(op.type)
-            {
-                case 's':
-                        a=op.a;
-                        b=op.b;
-                        break;
-                case 'i':
-                        a='e';
-                        b=op.b;
-                        break;
-                case 'd':
-                        a=op.a;
-                        b='e';
-                        break;
-                        
+
+        //<editor-fold defaultstate="collapsed" desc="Colocar cada operacion en la lista correspondiente a su posicion">
+        int pos;
+
+        for (Operation op : ops) {
+            pos = op.posSource;
+            if (op.type == 'i') {
+                posOpsI[pos].add(op);
+            } else {
+                posOps[pos].add(op);
             }
-            String m_v=Float.toString(op.opInfo.quality);
-            switch(m_v.length())
-            {
+
+        }
+        //</editor-fold>
+
+        //<editor-fold defaultstate="collapsed" desc="Ordenar las operaciones de cada posicion de acuerdo a su "goodness index" y seleccionarla">
+        Operation tmp;
+        for (int i = 0; i < posOps.length; i++) {
+            //<editor-fold defaultstate="collapsed" desc="Procesar inserciones">
+            if (!posOpsI[i].isEmpty()) {
+                Collections.sort(posOpsI[i], comparator);
+                tmp = (Operation) posOpsI[i].get(0);
+                /*Esto es para que quede igual que la implementacion de JMediaCadenas_20120926...*/
+                if (tmp.opInfo.quality >= DBSize / 2) {
+                    selectedOps.add(tmp);
+                }
+            }
+            //</editor-fold>
+
+            //<editor-fold defaultstate="collapsed" desc="Procesar sustituciones y borrados">
+            if (!posOps[i].isEmpty()) /*Deberia ocurrir siempre...salvo quizas en la ultima posicion*/ {
+                Collections.sort(posOps[i], comparator);
+                tmp = (Operation) posOps[i].get(0);
+                selectedOps.add(tmp);
+            }
+            //</editor-fold> 
+        }
+        //</editor-fold>
+        // printOperations(selectedOps);
+        return selectedOps;
+    }
+
+    private void printOperations(ArrayList<Operation> ops) {
+        for (Operation op : ops) {
+            char a = ' ';
+            char b = ' ';
+
+            switch (op.type) {
+                case 's':
+                    a = op.a;
+                    b = op.b;
+                    break;
+                case 'i':
+                    a = 'e';
+                    b = op.b;
+                    break;
+                case 'd':
+                    a = op.a;
+                    b = 'e';
+                    break;
+
+            }
+            String v = Float.toString(op.opInfo.quality);
+            switch (v.length()) {
                 case 1:
-                    m_v="00".concat(m_v);
+                    v = "00".concat(v);
                     break;
                 case 2:
-                    m_v="0".concat(m_v);
+                    v = "0".concat(v);
                     break;
             }
-            System.out.print(op.type+":"+a+":"+b+":"+op.posSource+":"+m_v+" " );
+            System.out.print(op.type + ":" + a + ":" + b + ":" + op.posSource + ":" + v + " ");
         }
         System.out.println();
-    
+
     }
-   
-    public static void main(String[] args) throws Exception
-    {
-        
+
+    public static void main(String[] args) throws Exception {
+
         //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
-        Properties p=JUtils.loadProperties();
-        String m_sdType = p.getProperty(JConstants.SYMBOL_DIF);
-        SymbolDif sd = (SymbolDif)JUtils.buildInstanceFromType(m_sdType, p);
+        Properties p = JUtils.loadProperties();
+        String sdType = p.getProperty(JConstants.SYMBOL_DIF);
+        SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
         p.put(JConstants.SYMBOL_DIF, sd);
-        
-        String m_edType=p.getProperty(JConstants.EDIT_DISTANCE);
-        EditDistance eD=(EditDistance)JUtils.buildInstanceFromType(m_edType,p);
+
+        String edType = p.getProperty(JConstants.EDIT_DISTANCE);
+        EditDistance eD = JUtils.newInstance(EditDistance.class, edType, p);
         p.put(JConstants.EDIT_DISTANCE, eD);
         //</editor-fold>
 
-                
-//        String m_cmpType=JUtils.getArgsType(JConstants.PROPERTIES_FILE, "symbolDif");
-//        SymbolDif a_sd=(SymbolDif)JUtils.buildInstanceFromType(m_cmpType);
-        
-        
-        List<Example> m_BD=JUtils.loadExamples(args[0]);
-        MAFischer2000 m_js=new MAFischer2000();
-        MASet m_sm=new MASet();
-        
-        MAResult m_newMeanE=m_js.getMean(m_BD,new Example("0",""), p);
-        //Example m_newMeanE=m_js.getMean(m_BD,m_BD.get(0));
-        
-        System.out.println("Empty AvgDist: "+m_newMeanE.sumDist/m_BD.size()+" TotalDist: "+m_newMeanE.totalDist);
-        System.out.println(m_newMeanE.meanExample.toString());
- 
-        MAResult m_setMean=m_sm.getMean(m_BD,null, p);
-        System.out.println("SetMedian AvgDist: "+m_setMean.sumDist/m_BD.size()+" TotalDist: "+(m_setMean.totalDist));
-        System.out.println(m_setMean.meanExample.toString());
-        
-        
-        MAResult m_newMean=m_js.getMean(m_BD,m_setMean.meanExample, p);
-        System.out.println("Mean AvgDist: "+m_newMean.sumDist/m_BD.size()+" TotalDist: "+(m_setMean.totalDist+m_newMean.totalDist));
-        System.out.println(m_newMean.meanExample.toString());
-        
+//        String cmpType=JUtils.getArgsType(JConstants.PROPERTIES_FILE, "symbolDif");
+//        SymbolDif sd=(SymbolDif)JUtils.buildInstanceFromType(cmpType);
+        List<Example> BD = JUtils.loadExamples(args[0]);
+        MAFischer2000 js = new MAFischer2000();
+        MASet sm = new MASet();
+
+        MAResult newMeanE = js.getMean(BD, new Example("0", ""), p);
+        //Example newMeanE=js.getMean(BD,BD.get(0));
+
+        System.out.println("Empty AvgDist: " + newMeanE.sumDist / BD.size() + " TotalDist: " + newMeanE.totalDist);
+        System.out.println(newMeanE.meanExample.toString());
+
+        MAResult setMean = sm.getMean(BD, null, p);
+        System.out.println("SetMedian AvgDist: " + setMean.sumDist / BD.size() + " TotalDist: " + (setMean.totalDist));
+        System.out.println(setMean.meanExample.toString());
+
+        MAResult newMean = js.getMean(BD, setMean.meanExample, p);
+        System.out.println("Mean AvgDist: " + newMean.sumDist / BD.size() + " TotalDist: " + (setMean.totalDist + newMean.totalDist));
+        System.out.println(newMean.meanExample.toString());
+
     }
-    
+
 }

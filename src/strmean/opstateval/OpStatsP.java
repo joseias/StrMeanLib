@@ -17,8 +17,6 @@ import strmean.main.JConstants;
  * MIRABAL, P., J. ABREU, y D. SECO, . "Assessing the best edit in
  * perturbation-based iterative refinement algorithms to compute the median
  * string". Pattern Recognition Letters. 2019, vol 120, p. 104 - 111.
- *
- * @author sijfg
  */
 public class OpStatsP extends OpStats {
 
@@ -30,7 +28,6 @@ public class OpStatsP extends OpStats {
     int maxOpsToInclude;
 
     /* Max number of operations to consider...*/
-
     /**
      *
      * @param ex
@@ -70,21 +67,21 @@ public class OpStatsP extends OpStats {
     }
 
     @Override
-    public void addOperation(Operation a_op) {
-        int symbolIndexB = sDif.getIndex(a_op.b);
-        int pos = a_op.posSource;
+    public void addOperation(Operation op) {
+        int symbolIndexB = sDif.getIndex(op.b);
+        int pos = op.posSource;
 
-        switch (a_op.type) {
+        switch (op.type) {
             case 'i':
-                positions[pos].insertions[symbolIndexB] += a_op.opInfo.weigth;
+                positions[pos].insertions[symbolIndexB] += op.opInfo.weigth;
                 break;
 
             case 'd':
-                positions[pos].deletes += a_op.opInfo.weigth;
+                positions[pos].deletes += op.opInfo.weigth;
                 break;
 
             case 's':
-                positions[pos].sustitutions[symbolIndexB] += a_op.opInfo.weigth;
+                positions[pos].sustitutions[symbolIndexB] += op.opInfo.weigth;
                 break;
 
             case 'w':
@@ -158,8 +155,7 @@ public class OpStatsP extends OpStats {
                     pos,
                     0, /* targetPos is not used, thus 0*/
                     new OpInfo(0.0f, 0, tmpQuality)));
-        }
-        else {
+        } else {
             if (result.peek().opInfo.quality < tmpQuality) {
                 result.poll();
                 result.add(new Operation('i',
@@ -181,8 +177,7 @@ public class OpStatsP extends OpStats {
                     0, /* targetPos is not used, thus 0*/
                     new OpInfo(0.0f, 0, tmpQuality)));
 
-        }
-        else {
+        } else {
             if (result.peek().opInfo.quality < tmpQuality) {
                 result.poll();
                 result.add(new Operation(opType,

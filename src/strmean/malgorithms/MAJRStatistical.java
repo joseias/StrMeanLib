@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package strmean.malgorithms;
 
 import java.io.PrintStream;
@@ -24,42 +20,41 @@ import strmean.main.JConstants;
 import strmean.main.JMathUtils;
 import strmean.main.JUtils;
 
-/**
- *
- * @author jabreu
- */
 public class MAJRStatistical extends MAlgorithm {
 
     OpStats opStatsTemplate;
 
     @Override
-    public MAResult getMean(List<Example> a_BD, Example a_seed, Properties p) throws Exception {
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
-        PrintStream log = (PrintStream) p.get(JConstants.LOG_FILE);
+    public MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception {
+
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
+        PrintStream oplog = (PrintStream) p.get(JConstants.LOG_FILE);
+        /*logger for printing best operation each time*/
+
         int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
-        opStatsTemplate = (OpStats) JUtils.buildInstanceFromType(p.getProperty(JConstants.OPS_STAT_EVALUATOR));
+        opStatsTemplate = JUtils.newInstance(OpStats.class, p.getProperty(JConstants.OPS_STAT_EVALUATOR));
         long maxEpoch = Long.parseLong(p.getProperty(JConstants.MAX_EPOCH, "0"));
         int maxOps = Integer.parseInt(p.getProperty(JConstants.MAX_OPS, "0"));
 
-        String m_cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
-        Comparator<Operation> m_comparator = (Comparator<Operation>) JUtils.buildInstanceFromType(m_cmpType);
+        String cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
+        Comparator<Operation> comparator = JUtils.newInstance(Comparator.class, cmpType);
 
         boolean pruneNegQuality = Boolean.parseBoolean(p.getProperty(JConstants.PRUNE_NEG_QUALITY));
         //</editor-fold>
 
         String logs;
 
-        boolean m_changed;
+        boolean changed;
         boolean keepTryingOps;
 
-        Example m_actualCandidate = new Example(a_seed);
-        Example m_bestExample = new Example(m_actualCandidate);
+        Example actualCandidate = new Example(seed);
+        Example bestExample = new Example(actualCandidate);
 
-        List<Operation> m_ops;
-        List<Operation> m_opsTmp;
+        List<Operation> ops;
+        List<Operation> opsTmp;
         List<String> opPosL = new LinkedList<>();
 
-        HashMap<String, Example> m_procExamples = new HashMap<>();
+        HashMap<String, Example> procExamples = new HashMap<>();
 
         OpStats opStatsBestExample;
         Operation op;
@@ -69,35 +64,34 @@ public class MAJRStatistical extends MAlgorithm {
         int cOps;
         int totalDist = 0;
 
-        //<editor-fold defaultstate="collapsed" desc="Calcular distancias y estadisticas">
-        OpStats opStatsCandidate = this.testExample(m_bestExample, a_BD, Float.MAX_VALUE, p);
+        //<editor-fold defaultstate="collapsed" desc="computing distances and stats">
+        OpStats opStatsCandidate = this.testExample(bestExample, BD, Float.MAX_VALUE, p);
         totalDist = totalDist + opStatsCandidate.totalDist;
 
         opStatsBestExample = opStatsCandidate;
 
-        m_procExamples.put(new String(m_bestExample.sequence), m_bestExample);
+        procExamples.put(new String(bestExample.sequence), bestExample);
         //</editor-fold>
         do {
-//            System.err.println(epoch);
             cEpoch++;
-            m_changed = false;
+            changed = false;
 
-            //<editor-fold defaultstate="collapsed" desc="Obtener operaciones y ordenar de acuerdo al criterio dado">
-            m_ops = opStatsCandidate.getOperations();
+            //<editor-fold defaultstate="collapsed" desc="get and sort edit operations">
+            ops = opStatsCandidate.getOperations();
 
-            //<editor-fold defaultstate="collapsed" desc="Poda: Eliminar opp con quality <= 0 (171114)">
+            //<editor-fold defaultstate="collapsed" desc="pruning, discard opp with quality <= 0 ">
             if (pruneNegQuality) {
-                m_ops.removeIf(e -> {
+                ops.removeIf(e -> {
                     return e.opInfo.quality <= 0;
                 });
             }
             //</editor-fold>
 
-            Collections.sort(m_ops, m_comparator);
+            Collections.sort(ops, comparator);
             //</editor-fold>
-            //<editor-fold defaultstate="collapsed" desc="Probar las operaciones de acuerdo a su ranking">
+            //<editor-fold defaultstate="collapsed" desc="evaluate operations by ranking">
 
-            Iterator<Operation> itOps = m_ops.iterator();
+            Iterator<Operation> itOps = ops.iterator();
             cOps = 0;
             opPos = 1;
             keepTryingOps = true;
@@ -105,45 +99,44 @@ public class MAJRStatistical extends MAlgorithm {
             while (itOps.hasNext() && keepTryingOps == true) {
                 op = itOps.next();
 
-                if (op.type != 's' || op.a != op.b) /*Si no es una sustitucion de un simbolo por si mismo*/ {
-                    //<editor-fold defaultstate="collapsed" desc="Obtener nueva candidata">
-                    m_opsTmp = new ArrayList<>(1);
-                    m_opsTmp.add(op);
-                    m_actualCandidate = m_bestExample.applyOperations(m_opsTmp);
+                if (op.type != 's' || op.a != op.b) /*if not a substituion by the same symbol*/ {
+                    //<editor-fold defaultstate="collapsed" desc="get the new incumbent">
+                    opsTmp = new ArrayList<>(1);
+                    opsTmp.add(op);
+                    actualCandidate = bestExample.applyOperations(opsTmp);
 
                     //</editor-fold>
-                    //<editor-fold defaultstate="collapsed" desc="Probar candidata">
-                    String key = new String(m_actualCandidate.sequence);
-                    if (!m_procExamples.containsKey(key)) {
-                        /*Si est\'{a} en la tabla no deber\'{i}a ser mejor que bestExample*/
-                        opStatsCandidate = this.testExample(m_actualCandidate, a_BD, opStatsBestExample.sumDist, p);
+                    //<editor-fold defaultstate="collapsed" desc="assessing the incumbent">
+                    String key = new String(actualCandidate.sequence);
+                    if (!procExamples.containsKey(key)) {
+                        /* if can be found in the table, shall not be the better than bestExample*/
+                        opStatsCandidate = this.testExample(actualCandidate, BD, opStatsBestExample.sumDist, p);
                         totalDist = totalDist + opStatsCandidate.totalDist;
 
-                        m_procExamples.put(key, m_actualCandidate);
+                        procExamples.put(key, actualCandidate);
 
                         if (opStatsBestExample.sumDist > opStatsCandidate.sumDist) {
-                            double meanOld = JMathUtils.round(opStatsBestExample.sumDist / a_BD.size(), precision);
-                            double meanNew = JMathUtils.round(opStatsCandidate.sumDist / a_BD.size(), precision);
+                            double meanOld = JMathUtils.round(opStatsBestExample.sumDist / BD.size(), precision);
+                            double meanNew = JMathUtils.round(opStatsCandidate.sumDist / BD.size(), precision);
                             double stdvNew = JMathUtils.round(JMathUtils.getStdv(opStatsCandidate.distances, meanNew), precision);
 
-                            double expectedV = JMathUtils.round(op.opInfo.quality / a_BD.size(), precision);
+                            double expectedV = JMathUtils.round(op.opInfo.quality / BD.size(), precision);
                             double deltha = JMathUtils.round((meanOld - meanNew), precision);
 
-                            m_bestExample = m_actualCandidate;
+                            bestExample = actualCandidate;
                             opStatsBestExample = opStatsCandidate;
-                            m_changed = true;
+                            changed = true;
 
                             String info = meanOld + " " + meanNew + " " + deltha + " " + expectedV + " " + stdvNew + " " + totalDist;
                             logs = Integer.toString(opPos) + "-" + op.toString() + " " + info;
                             opPosL.add(logs);
-                            log.println(logs);
-                        }
-                        /*JComment: Patch to print the  operation if maxEpoch==1*/
-                        else {
+                            oplog.println(logs);
+                        } else {
                             if (maxEpoch == 1) {
+                                /*patch to print the  operation if maxEpoch==1*/
                                 logs = Integer.toString(opPos) + "-" + op.toString();
                                 opPosL.add(logs);
-                                log.println(logs);
+                                oplog.println(logs);
                             }
                         }
                     }
@@ -152,13 +145,14 @@ public class MAJRStatistical extends MAlgorithm {
                     cOps++;
                 }
 
-                keepTryingOps = !m_changed && ((maxOps <= 0) || (maxOps > 0 && cOps < maxOps));
+                keepTryingOps = !changed && ((maxOps <= 0) || (maxOps > 0 && cOps < maxOps));
             }
             //</editor-fold>
-        } /*Continue if there was an improvement, or max Epoch are reached, if specified*/ while (m_changed == true && ((maxEpoch <= 0) || (maxEpoch > 0 && cEpoch < maxEpoch)));
+            /* continue if there was an improvement, or max Epoch are reached, if specified*/
+        } while (changed == true && ((maxEpoch <= 0) || (maxEpoch > 0 && cEpoch < maxEpoch)));
 
         MAResult result = new MAResult();
-        result.meanExample = m_bestExample;
+        result.meanExample = bestExample;
         result.sumDist = opStatsBestExample.sumDist;
         result.totalDist = totalDist;
         result.opPosList = opPosL;
@@ -176,33 +170,33 @@ public class MAJRStatistical extends MAlgorithm {
      * opStatsTemplate this is to avoid repeated creations of OpStats objects by
      * reflection...
      *
-     * @param a_candidate
-     * @param a_BD
+     * @param candidate
+     * @param BD
      * @param thresholdDist
      * @param p
      * @return
      */
-    protected OpStats testExample(Example a_candidate, List<Example> a_BD, float thresholdDist, Properties p) {
+    protected OpStats testExample(Example candidate, List<Example> BD, float thresholdDist, Properties p) {
 
         //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
 
         OpStats opStats = opStatsTemplate.newInstance();
-        opStats.init(a_candidate, ed._sd, a_BD.size());
+        opStats.init(candidate, ed._sd, BD.size());
 
         EDResult edR;
         int index = 0;
-        for (Example e : a_BD) {
-            edR = ed.dEdition(a_candidate, e, true);
+        for (Example e : BD) {
+            edR = ed.dEdition(candidate, e, true);
             opStats.totalDist++;
             opStats.sumDist = opStats.sumDist + edR.dist;
             opStats.distances[index] = edR.dist;
             index++;
 
-            /*Optimization to speed up the test*/
+            /*optimization to speed up the test*/
             if (opStats.sumDist > thresholdDist) {
-                /*Abort execution*/
+                /*abort execution*/
                 return opStats;
             }
 
@@ -215,50 +209,58 @@ public class MAJRStatistical extends MAlgorithm {
         return opStats;
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         JUtils.initLogger();
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
-        Properties p = JUtils.loadProperties();
-        String m_sdType = p.getProperty(JConstants.SYMBOL_DIF);
-        SymbolDif sd = (SymbolDif) JUtils.buildInstanceFromType(m_sdType, p);
-        p.put(JConstants.SYMBOL_DIF, sd);
 
-        String m_edType = p.getProperty(JConstants.EDIT_DISTANCE);
-        EditDistance eD = (EditDistance) JUtils.buildInstanceFromType(m_edType, p);
-        p.put(JConstants.EDIT_DISTANCE, eD);
-        //</editor-fold>
+        try {
 
-//        System.out.println("Working...");
-        List<Example> m_BD = JUtils.loadExamples(args[0]);
-        PrintStream ps = new PrintStream(args[1]);
-        PrintStream pslog = new PrintStream(args[1] + ".log");
-        p.put(JConstants.LOG_FILE, pslog);
+            String inpath = args[0];
+            String outpath = args[1];
 
-        int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
+            //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
+            Properties p = JUtils.loadProperties();
+            String sdType = p.getProperty(JConstants.SYMBOL_DIF);
+            SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
+            p.put(JConstants.SYMBOL_DIF, sd);
 
-        MAJRStatistical m_js = new MAJRStatistical();
-        MASet m_sm = new MASet();
+            String edType = p.getProperty(JConstants.EDIT_DISTANCE);
+            EditDistance eD = JUtils.newInstance(EditDistance.class, edType, p);
+            p.put(JConstants.EDIT_DISTANCE, eD);
+            //</editor-fold>
 
-        MAResult m_setMean = m_sm.getMean(m_BD, null, p);
-        ps.println("SetMedian AvgDist: " + m_setMean.sumDist / m_BD.size() + " TotalDist: " + m_setMean.totalDist);
-        ps.println(m_setMean.meanExample.toString());
+            List<Example> BD = JUtils.loadExamples(inpath);
+            PrintStream oplog;
+            PrintStream ps = new PrintStream(outpath);
 
-        long start = System.currentTimeMillis();
-        MAResult m_newMean = m_js.getMean(m_BD, m_setMean.meanExample, p);
-        long end = System.currentTimeMillis();
+            oplog = new PrintStream(outpath + ".log");
+            p.put(JConstants.LOG_FILE, oplog);
+            int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
 
-        int totalDist = m_newMean.totalDist + m_setMean.totalDist;
-        double median = m_newMean.sumDist / m_BD.size();
-        double stdv = JMathUtils.round(JMathUtils.getStdv(m_newMean.distances, median), precision);
-        ps.println("Mean AvgDist: " + m_newMean.sumDist / m_BD.size() + " TotalDist: " + totalDist + " Stdv: " + stdv);
-        ps.println(m_newMean.meanExample.toString());
+            MAJRStatistical js = new MAJRStatistical();
+            MASet sm = new MASet();
+            MAResult setMean = sm.getMean(BD, null, p);
 
-        ps.println("PFO " + (end - start));
-//        for(String s:m_newMean.opPosList){
-//            ps.println(s);
-//        }
+            ps.println("SetMedian AvgDist: " + setMean.sumDist / BD.size() + " TotalDist: " + setMean.totalDist);
+            ps.println(setMean.meanExample.toString());
 
-        ps.close();
-        pslog.close();
+            long start = System.currentTimeMillis();
+            MAResult newMean = js.getMean(BD, setMean.meanExample, p);
+            long end = System.currentTimeMillis();
+
+            int totalDist = newMean.totalDist + setMean.totalDist;
+            double median = newMean.sumDist / BD.size();
+            double stdv = JMathUtils.round(JMathUtils.getStdv(newMean.distances, median), precision);
+
+            ps.println("Mean AvgDist: " + newMean.sumDist / BD.size() + " TotalDist: " + totalDist + " Stdv: " + stdv);
+            ps.println(newMean.meanExample.toString());
+            ps.println("PFO " + (end - start));
+
+            newMean.opPosList.forEach((s) -> {
+                ps.println(s);
+            });
+            oplog.close();
+        } catch (Exception e) {
+            System.err.print(e.getMessage());
+        }
     }
 }

@@ -9,50 +9,43 @@ public final class Operation {
     public String opS;            //string representing the operation, not consistent with toString...
     public OpInfo opInfo;
 
-    public Operation(char op, char a, char b, int posS, int posT, OpInfo opInfo) 
-    {
+    public Operation(char op, char a, char b, int posS, int posT, OpInfo opInfo) {
         this.type = op;
         this.a = a;
         this.b = b;
         this.posSource = posS;
-        this.posTarget=posT;
-        this.opInfo=opInfo;
+        this.posTarget = posT;
+        this.opInfo = opInfo;
 
-        opS="("+Character.toString(op)+":"+Character.toString(a)+":"+Character.toString(b)+":"+Integer.toString(posS)+")";
+        opS = "(" + Character.toString(op) + ":" + Character.toString(a) + ":" + Character.toString(b) + ":" + Integer.toString(posS) + ")";
     }
 
     @Override
     public String toString() {
         String s = "" + type + "-";
-        if (type == 's' || type=='w') {
+        if (type == 's' || type == 'w') {
             s += "" + a + "-" + b;
-        }
-        else {
+        } else {
             s += "" + a + "-" + "-";
         }
-        s += "-posS:" + posSource + "-posT:"+ posTarget +"-quality:" + this.opInfo.quality;
+        s += "-posS:" + posSource + "-posT:" + posTarget + "-quality:" + this.opInfo.quality;
         //s+="\n";
         return s;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return this.opS.hashCode();
     }
-    
-    @Override
-    public boolean equals(Object o)
-    {
 
-        if(!(o instanceof  Operation))
-        {
+    @Override
+    public boolean equals(Object o) {
+
+        if (!(o instanceof Operation)) {
             return false;
-        }
-        else
-        {
-            Operation ob=(Operation)o;
-            return (this.type==ob.type && this.posSource==ob.posSource && this.a==ob.a && this.b==ob.b);
+        } else {
+            Operation ob = (Operation) o;
+            return (this.type == ob.type && this.posSource == ob.posSource && this.a == ob.a && this.b == ob.b);
         }
     }
 }
