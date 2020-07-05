@@ -1,6 +1,6 @@
 SetMedian AvgDist: 5.3333335 TotalDist: 3
 - 0616
-Mean AvgDist: 4.6666665 TotalDist: 96 Stdv: 3.56
+Mean AvgDist: 4.6666665 TotalDist: 39 Stdv: 3.56
 - 061
-PFO 16
-3-d-6---posS:3-posT:0-quality:2.0 5.33 4.67 0.66 0.67 3.56 12
+PFO 4
+3-d-6---posS:3-posT:2-quality:1.0 5.33 4.67 0.66 0.33 3.56 12

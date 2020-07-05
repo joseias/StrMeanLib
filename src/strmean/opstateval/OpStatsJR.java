@@ -8,10 +8,10 @@ import strmean.data.Operation;
 import strmean.data.SymbolDif;
 
 /**
- * ABREU, J. y J.R. RICO-JUAN, . "A new iterative algorithm for computing a
- * quality approximate median of strings based on edit operations". Pattern
- * Recognition Letters. 2014, vol 36, núm. 0, p. 74 - 80.
- *
+ * Implements the ranking criteria in:
+ * ABREU, J. y J.R. RICO-JUAN, .
+ * "A new iterative algorithm for computing a quality approximate median of strings based on edit operations".
+ * Pattern Recognition Letters. 2014, vol 36, núm. 0, p. 74 - 80.
  */
 public class OpStatsJR extends OpStats {
 

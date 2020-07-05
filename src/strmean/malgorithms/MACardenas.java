@@ -16,6 +16,12 @@ import strmean.main.JMathUtils;
 import strmean.main.JUtils;
 import strmean.opstateval.OpStats;
 
+/**
+ * Implement the multiple-edits-at-a-time algorithm for the median string
+ * problem described in: MOLLINEDA CÁRDENAS, R. A.. A learning model for
+ * multiple-prototype classification of strings. 17th Int. Conf. on Pattern
+ * Recognition (ICPR). 2004, pp. 420-423.
+ */
 public class MACardenas extends MAFischer2000 {
 
     int totalDist;
@@ -27,32 +33,32 @@ public class MACardenas extends MAFischer2000 {
     }
 
     /**
-     * Dado el conjunto de todas las operaciones, devuelve la mejor en cada
-     * posicion.
+     * Given all the possible edit operations, return the best for each
+     * position.
      *
      * @return
      */
     @Override
     protected List<Operation> selectOperations(OpStats opStats, int DBSize, Properties p) throws Exception {
+
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
+        String cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
+        Comparator<Operation> comparator = JUtils.newInstance(Comparator.class, cmpType);
+        //</editor-fold>
+
+        //<editor-fold defaultstate="collapsed" desc="initializations">
         List<Operation> ops = opStats.getOperations();
         ArrayList[] posOps = new ArrayList[opStats.ex.sequence.length + 1];
         ArrayList[] posOpsI = new ArrayList[opStats.ex.sequence.length + 1];
 
         List<Operation> selectedOps = new ArrayList<>(opStats.ex.sequence.length);
-
-        //<editor-fold defaultstate="collapsed" desc="Carga dinamica del comparador de operaciones">
-        String cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
-        Comparator<Operation> comparator = JUtils.newInstance(Comparator.class, cmpType);
-        //</editor-fold>
-
-        //<editor-fold defaultstate="collapsed" desc="Inicializar ">
         for (int i = 0; i < posOps.length; i++) {
             posOps[i] = new ArrayList<>();
             posOpsI[i] = new ArrayList<>();
         }
         //</editor-fold>
 
-        //<editor-fold defaultstate="collapsed" desc="Colocar cada operacion en la lista correspondiente a su posicion">
+        //<editor-fold defaultstate="collapsed" desc="set each operation in the respective list (per position)">
         int pos;
 
         for (Operation op : ops) {
@@ -62,14 +68,13 @@ public class MACardenas extends MAFischer2000 {
             } else {
                 posOps[pos].add(op);
             }
-
         }
         //</editor-fold>
 
-        //<editor-fold defaultstate="collapsed" desc="Ordenar las operaciones de cada posicion de acuerdo a su "goodness index" y seleccionarla">
+        //<editor-fold defaultstate="collapsed" desc="sort operations within the same position by quality and select the best">
         Operation tmp;
         for (int i = 0; i < posOps.length; i++) {
-            //<editor-fold defaultstate="collapsed" desc="Procesar inserciones">
+            //<editor-fold defaultstate="collapsed" desc="insertions">
             if (!posOpsI[i].isEmpty()) {
                 Collections.sort(posOpsI[i], comparator);
                 tmp = (Operation) posOpsI[i].get(0);
@@ -81,7 +86,7 @@ public class MACardenas extends MAFischer2000 {
             }
             //</editor-fold>
 
-            //<editor-fold defaultstate="collapsed" desc="Procesar sustituciones y borrados">
+            //<editor-fold defaultstate="collapsed" desc="substitutions and deletions">
             if (!posOps[i].isEmpty()) {
                 Collections.sort(posOps[i], comparator);
                 tmp = (Operation) posOps[i].get(0);
@@ -92,13 +97,12 @@ public class MACardenas extends MAFischer2000 {
             //</editor-fold> 
         }
         //</editor-fold>
-        // PrintOperations(selectedOps);
         return selectedOps;
     }
 
     public static void main(String[] args) throws Exception {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = (SymbolDif) JUtils.newInstance(SymbolDif.class, sdType, p);
@@ -110,9 +114,9 @@ public class MACardenas extends MAFischer2000 {
         p.put(JConstants.MIN_FREC, 0.0d);
         //</editor-fold>
 
-        String[] name = args[0].split("\\.");
-        PrintStream psE = new PrintStream(name[0] + "_E_cardenas.out");
-        PrintStream psM = new PrintStream(name[0] + "_cardenas.out");
+        String fname = args[0].split("\\.")[0];
+        PrintStream psE = new PrintStream(fname + "_E_cardenas.out");
+        PrintStream psM = new PrintStream(fname + "_cardenas.out");
 
         List<Example> BD = JUtils.loadExamples(args[0]);
         MACardenas js = new MACardenas(p);
@@ -160,7 +164,5 @@ public class MACardenas extends MAFischer2000 {
         psM.println(labelM);
         psM.println(avgDistM);
         psM.println(distM);
-
     }
-
 }

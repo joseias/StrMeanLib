@@ -170,7 +170,7 @@ public class MAJOPStatistical_HSP extends MAlgorithm {
      */
     protected OpStats testExample(Example candidate, List<Example> BD, float thresholdDist, Properties p) {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
         OpStats opStats = opStatsTemplate.newInstance();
@@ -203,7 +203,7 @@ public class MAJOPStatistical_HSP extends MAlgorithm {
     public static void main(String[] args) throws Exception {
         JUtils.initLogger();
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);

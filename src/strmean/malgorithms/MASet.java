@@ -27,7 +27,7 @@ public class MASet extends MAlgorithm {
     @Override
     public MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
 

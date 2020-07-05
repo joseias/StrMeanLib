@@ -20,6 +20,16 @@ import strmean.main.JConstants;
 import strmean.main.JMathUtils;
 import strmean.main.JUtils;
 
+
+/**
+ * Implements a generic one-edit-at-a-time perturbation-based algorithm for the median string problem.
+ * Different algorithms can be instantiated by implementing different quality metrics
+ * for the operations.
+ * Described in:
+ * ABREU, J. y J.R. RICO-JUAN, .
+ * "A new iterative algorithm for computing a quality approximate median of strings based on edit operations".
+ * Pattern Recognition Letters. 2014, vol 36, pp. 74 - 80.
+ */
 public class MAJRStatistical extends MAlgorithm {
 
     OpStats opStatsTemplate;
@@ -106,7 +116,7 @@ public class MAJRStatistical extends MAlgorithm {
                     actualCandidate = bestExample.applyOperations(opsTmp);
 
                     //</editor-fold>
-                    //<editor-fold defaultstate="collapsed" desc="assessing the incumbent">
+                    //<editor-fold defaultstate="collapsed" desc="assess the incumbent">
                     String key = new String(actualCandidate.sequence);
                     if (!procExamples.containsKey(key)) {
                         /* if can be found in the table, shall not be the better than bestExample*/
@@ -178,7 +188,7 @@ public class MAJRStatistical extends MAlgorithm {
      */
     protected OpStats testExample(Example candidate, List<Example> BD, float thresholdDist, Properties p) {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
 

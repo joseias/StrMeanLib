@@ -16,6 +16,12 @@ import strmean.main.JConstants;
 import strmean.main.JUtils;
 import strmean.opstateval.OpStats;
 
+/**
+ * Implement the multiple-edits-at-a-time algorithm for the median string
+ * problem described in: FISCHER, Igor y ANDREAS ZELL. String Averages and
+ * Self-Organizing Map for Strings. Proc. of the Neural Computation. 2000, pp.
+ * 208-215.
+ */
 public class MAFischer2000 extends MAlgorithm {
 
     OpStats opStatsTemplate;
@@ -23,7 +29,7 @@ public class MAFischer2000 extends MAlgorithm {
     @Override
     public MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         opStatsTemplate = JUtils.newInstance(OpStats.class, p.getProperty(JConstants.OPS_STAT_EVALUATOR));
         //</editor-fold>
         boolean changed;
@@ -36,7 +42,7 @@ public class MAFischer2000 extends MAlgorithm {
         OpStats opStatsBestExample;
 
         int totalDist = 0;
-        //<editor-fold defaultstate="collapsed" desc="Calcular distancias y estadisticas">
+        //<editor-fold defaultstate="collapsed" desc="computing distances and stats">
         opStatsCandidate = this.testExample(bestExample, BD, p);
         totalDist = totalDist + opStatsCandidate.totalDist;
         opStatsBestExample = opStatsCandidate;
@@ -46,18 +52,18 @@ public class MAFischer2000 extends MAlgorithm {
         do {
             changed = false;
 
-            //<editor-fold defaultstate="collapsed" desc="Obtener operaciones a aplicar">
+            //<editor-fold defaultstate="collapsed" desc="select the operations to be applied">
             ops = this.selectOperations(opStatsCandidate, BD.size(), p);
 
             //</editor-fold>
-            //<editor-fold defaultstate="collapsed" desc="Obtener nueva candidata">
+            //<editor-fold defaultstate="collapsed" desc="get the new incumbent">
             actualCandidate = bestExample.applyOperations(ops);
             //</editor-fold>
 
-            //<editor-fold defaultstate="collapsed" desc="Probar candidata">
+            //<editor-fold defaultstate="collapsed" desc="assess the incumbent">
             String key = new String(actualCandidate.sequence);
             if (!procExamples.containsKey(key)) {
-                /*Si esta en la tabla no deberia ser mejor que bestExample*/
+                /* if can be found in the table, shall not be the better than bestExample*/
                 opStatsCandidate = this.testExample(actualCandidate, BD, p);
                 totalDist = totalDist + opStatsCandidate.totalDist;
 
@@ -83,7 +89,7 @@ public class MAFischer2000 extends MAlgorithm {
 
     private OpStats testExample(Example candidate, List<Example> BD, Properties p) {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
 
@@ -116,6 +122,13 @@ public class MAFischer2000 extends MAlgorithm {
      * @throws java.lang.Exception
      */
     protected List<Operation> selectOperations(OpStats opStats, int DBSize, Properties p) throws Exception {
+
+        //<editor-fold defaultstate="collapsed" desc="injecting dependenciess">
+        String cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
+        Comparator<Operation> comparator = JUtils.newInstance(Comparator.class, cmpType);
+        //</editor-fold>
+
+        //<editor-fold defaultstate="collapsed" desc="initializations ">
         List<Operation> ops = opStats.getOperations();
 
         ArrayList[] posOps = new ArrayList[opStats.ex.sequence.length + 1];
@@ -123,19 +136,13 @@ public class MAFischer2000 extends MAlgorithm {
 
         List<Operation> selectedOps = new ArrayList<>(opStats.ex.sequence.length);
 
-        //<editor-fold defaultstate="collapsed" desc="Carga dinamica del comparador de operaciones">
-        String cmpType = p.getProperty(JConstants.COMPARATOR_OPS);
-        Comparator<Operation> comparator = JUtils.newInstance(Comparator.class, cmpType);
-        //</editor-fold>
-
-        //<editor-fold defaultstate="collapsed" desc="Inicializar ">
         for (int i = 0; i < posOps.length; i++) {
             posOps[i] = new ArrayList<>();
             posOpsI[i] = new ArrayList<>();
         }
         //</editor-fold>
 
-        //<editor-fold defaultstate="collapsed" desc="Colocar cada operacion en la lista correspondiente a su posicion">
+        //<editor-fold defaultstate="collapsed" desc="set each operation in the respective list (per position)">
         int pos;
 
         for (Operation op : ops) {
@@ -149,22 +156,21 @@ public class MAFischer2000 extends MAlgorithm {
         }
         //</editor-fold>
 
-        //<editor-fold defaultstate="collapsed" desc="Ordenar las operaciones de cada posicion de acuerdo a su "goodness index" y seleccionarla">
+        //<editor-fold defaultstate="collapsed" desc="sort operations within the same position by quality and select the best">
         Operation tmp;
         for (int i = 0; i < posOps.length; i++) {
-            //<editor-fold defaultstate="collapsed" desc="Procesar inserciones">
+            //<editor-fold defaultstate="collapsed" desc="insertions">
             if (!posOpsI[i].isEmpty()) {
                 Collections.sort(posOpsI[i], comparator);
                 tmp = (Operation) posOpsI[i].get(0);
-                /*Esto es para que quede igual que la implementacion de JMediaCadenas_20120926...*/
                 if (tmp.opInfo.quality >= DBSize / 2) {
                     selectedOps.add(tmp);
                 }
             }
             //</editor-fold>
 
-            //<editor-fold defaultstate="collapsed" desc="Procesar sustituciones y borrados">
-            if (!posOps[i].isEmpty()) /*Deberia ocurrir siempre...salvo quizas en la ultima posicion*/ {
+            //<editor-fold defaultstate="collapsed" desc="substitutions and deletions">
+            if (!posOps[i].isEmpty()) /* this would be the case every time*/ {
                 Collections.sort(posOps[i], comparator);
                 tmp = (Operation) posOps[i].get(0);
                 selectedOps.add(tmp);
@@ -172,7 +178,6 @@ public class MAFischer2000 extends MAlgorithm {
             //</editor-fold> 
         }
         //</editor-fold>
-        // printOperations(selectedOps);
         return selectedOps;
     }
 
@@ -213,7 +218,7 @@ public class MAFischer2000 extends MAlgorithm {
 
     public static void main(String[] args) throws Exception {
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
@@ -224,8 +229,6 @@ public class MAFischer2000 extends MAlgorithm {
         p.put(JConstants.EDIT_DISTANCE, eD);
         //</editor-fold>
 
-//        String cmpType=JUtils.getArgsType(JConstants.PROPERTIES_FILE, "symbolDif");
-//        SymbolDif sd=(SymbolDif)JUtils.buildInstanceFromType(cmpType);
         List<Example> BD = JUtils.loadExamples(args[0]);
         MAFischer2000 js = new MAFischer2000();
         MASet sm = new MASet();
@@ -245,5 +248,4 @@ public class MAFischer2000 extends MAlgorithm {
         System.out.println(newMean.meanExample.toString());
 
     }
-
 }

@@ -21,7 +21,7 @@ public class Main {
     public static void validateExample(String[] args) throws Exception {
         System.out.println("Working...");
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
@@ -48,7 +48,7 @@ public class Main {
     public static void testEDDLRestricted() throws Exception {
 
         System.out.println("Working...");
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
@@ -84,7 +84,7 @@ public class Main {
 
     public static void testMJRStatistical(String[] args) throws Exception {
         System.out.println("Working...");
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
@@ -115,7 +115,7 @@ public class Main {
 
         System.out.println("Working...");
 
-        //<editor-fold defaultstate="collapsed" desc="Injecting dependencies">
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
         SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
