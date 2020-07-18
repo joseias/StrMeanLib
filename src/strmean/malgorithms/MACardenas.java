@@ -1,11 +1,14 @@
 package strmean.malgorithms;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringJoiner;
 import strmean.data.Example;
 import strmean.data.MAResult;
 import strmean.data.Operation;
@@ -107,6 +110,11 @@ public class MACardenas extends MAFischer2000 {
 
     public static void main(String[] args) throws Exception {
 
+        Path inpath = Paths.get(args[0]);
+        Path outpath = Paths.get(args[1]);
+        String inname = inpath.getFileName().toString();
+        String outdir = outpath.getParent().toString();
+        
         //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         Properties p = JUtils.loadProperties();
         String sdType = p.getProperty(JConstants.SYMBOL_DIF);
@@ -119,49 +127,89 @@ public class MACardenas extends MAFischer2000 {
         p.put(JConstants.MIN_FREC, 0.0d);
         //</editor-fold>
 
-        String fname = args[0].split("\\.")[0];
-        PrintStream psE = new PrintStream(fname + "_E_cardenas.out");
-        PrintStream psM = new PrintStream(fname + "_cardenas.out");
 
-        List<Example> BD = JUtils.loadExamples(args[0]);
-        MACardenas js = new MACardenas(p);
-        MASet sm = new MASet();
+        PrintStream psout = new PrintStream(outpath.toString());
+        
+        String sep = System.getProperty("file.separator");
+        PrintStream psE = new PrintStream(outdir+sep+inname + "_E_cardenas.csv");
+        PrintStream psM = new PrintStream(outdir+sep+inname + "_M_cardenas.csv");
+
+        List<Example> BD = JUtils.loadExamples(inpath.toString());
 
         double alpha = 0.1;
-        String labelE = "";
-        String avgDistE = "";
-        String distE = "";
-
-        String labelM = "";
-        String avgDistM = "";
-        String distM = "";
-
+        StringJoiner labelE = new StringJoiner(",");
+        StringJoiner avgDistE = new StringJoiner(",");
+        StringJoiner distE = new StringJoiner(",");
+        
+        StringJoiner labelM= new StringJoiner(",");
+        StringJoiner avgDistM = new StringJoiner(",");
+        StringJoiner distM = new StringJoiner(",");
+        
+        labelE.add("alpha");
+        avgDistE.add("avgDist");
+        distE.add("totalDist");
+        
+        labelM.add("alpha");
+        avgDistM.add("avgDist");
+        distM.add("totalDist");
+        
+        int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
+                
+        MACardenas js = new MACardenas(p);
+        MASet sm = new MASet();
+        
+        MAResult setMean = sm.getMean(BD, null, p);
+        double median = setMean.sumDist / BD.size();
+        int totalDist = setMean.totalDist;
+        double stdv = JMathUtils.round(JMathUtils.getStdv(setMean.distances, median), precision);
+        psout.println("SetMedian AvgDist: " + median + " TotalDist: " + totalDist + " Stdv: " + stdv);
+        psout.println(setMean.meanExample.toString());   
+        
+        
+        MAResult bestE = null;
+        MAResult bestM = null;
+        double bestAE = 0.0;
+        double bestAM = 0.0;
+        
         while (alpha < 1) {
             js.c_minFreq = BD.size() * alpha;
 
-            MAResult newMeanE = js.getMean(BD, new Example("0", ""), p);
-            labelE = labelE + ",cardenasC1_E_" + JMathUtils.round(alpha, 3);
-            avgDistE = avgDistE + "," + Double.toString(newMeanE.sumDist / BD.size());
-            distE = distE + "," + newMeanE.totalDist;
-
-            MAResult setMean = sm.getMean(BD, null, p);
+            MAResult newMeanE = js.getMean(BD, new Example("-", ""), p);
+            labelE.add(Double.toString(JMathUtils.round(alpha, 3)));
+            avgDistE.add(Double.toString(newMeanE.sumDist / BD.size()));
+            distE.add(Integer.toString(newMeanE.totalDist));
+            
 
             MAResult newMeanM = js.getMean(BD, setMean.meanExample, p);
-            labelM = labelM + ",cardenasC1_" + JMathUtils.round(alpha, 3);
-            avgDistM = avgDistM + "," + Double.toString(newMeanM.sumDist / BD.size());
-            distM = distM + "," + newMeanM.totalDist;
+            labelM.add(Double.toString(JMathUtils.round(alpha, 3)));
+            avgDistM.add(Double.toString(newMeanM.sumDist / BD.size()));
+            distM.add(Integer.toString(setMean.totalDist+newMeanM.totalDist));
 
+            if(bestE==null || bestE.sumDist>newMeanE.sumDist){
+                bestE=newMeanE;
+                bestAE = alpha;
+            }
+            if(bestM==null || bestM.sumDist>newMeanM.sumDist){
+                bestM=newMeanM;
+                bestAM = alpha;
+            }
+ 
             alpha = alpha * 1.05;
-
         }
-        labelE = labelE.substring(1);
-        avgDistE = avgDistE.substring(1);
-        distE = distE.substring(1);
 
-        labelM = labelM.substring(1);
-        avgDistM = avgDistM.substring(1);
-        distM = distM.substring(1);
 
+        median = bestE.sumDist / BD.size();
+        totalDist = bestE.totalDist;
+        stdv = JMathUtils.round(JMathUtils.getStdv(bestE.distances, median), precision);
+        psout.println("Empty AvgDist: " + median + " TotalDist: " + totalDist + " Stdv: " + stdv + " alpha: " + bestAE);
+        psout.println(bestE.meanExample.toString());   
+        
+        median = bestM.sumDist / BD.size();
+        totalDist = setMean.totalDist + bestM.totalDist;
+        stdv = JMathUtils.round(JMathUtils.getStdv(bestM.distances, median), precision);
+        psout.println("Mean AvgDist: " + median + " TotalDist: " + totalDist + " AddDist: " + bestM.totalDist + " Stdv: " + stdv + " alpha: " + bestAM);
+        psout.println(bestM.meanExample.toString());   
+        
         psE.println(labelE);
         psE.println(avgDistE);
         psE.println(distE);

@@ -3,8 +3,6 @@ package strmean.data;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import strmean.main.JConstants;
-import strmean.main.JUtils;
 
 /*
  * Example to ChainsSetMulti

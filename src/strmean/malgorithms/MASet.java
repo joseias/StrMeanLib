@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Properties;
 import strmean.data.Example;
 import strmean.data.MAResult;
+import strmean.data.SymbolDif;
 import strmean.distances.EditDistance;
 import strmean.main.JConstants;
+import strmean.main.JUtils;
 
 /**
  *
@@ -39,7 +41,8 @@ public class MASet extends MAlgorithm {
         Example source;
 
         float[] sumDist = new float[BD.size()];
-
+        float[][] distances = new float[BD.size()][BD.size()];
+        
         for (int i = 0; i < dbSize; i++) {
             source = BD.get(i);
             for (int j = i + 1; j < dbSize; j++) {
@@ -47,6 +50,8 @@ public class MASet extends MAlgorithm {
                 totalDist++;
                 sumDist[i] = sumDist[i] + tmpDist;
                 sumDist[j] = sumDist[j] + tmpDist;
+                
+                distances[i][j]=distances[j][i]=tmpDist;
             }
 
             if (sumDist[i] < betterSum) {
@@ -59,20 +64,31 @@ public class MASet extends MAlgorithm {
         result.sumDist = betterSum;
         result.meanExample = BD.get(betterIndex);
         result.totalDist = totalDist;
+        result.distances = distances[betterIndex];
         return result;
     }
 
     public static void main(String[] args) throws Exception {
 
-//        String cmpType=JUtils.GetArgsType(JConstants.PROPERTIES_FILE, "symbolDif");
-//        SymbolDif sd=(SymbolDif)JUtils.BuildInstance(cmpType);
-//        
-//        ArrayList<Example> BD=JUtils.LoadExamples(args[0]);
-//        MASet js=new MASet(new EDLevenshtein());
-//        
-//        Example newMeanE=js.getMean(BD,new Example("0","",sd));
-//        System.out.println("SetMean AvgDist: "+newMeanE.sumDist/BD.size()+" TotalDist: "+newMeanE.totalDist);
-//        System.out.println(newMeanE.toString());
+
+        //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
+        Properties p = JUtils.loadProperties();
+        String sdType = p.getProperty(JConstants.SYMBOL_DIF);
+        SymbolDif sd = JUtils.newInstance(SymbolDif.class, sdType, p);
+        p.put(JConstants.SYMBOL_DIF, sd);
+
+        String edType = p.getProperty(JConstants.EDIT_DISTANCE);
+        EditDistance eD = JUtils.newInstance(EditDistance.class, edType, p);
+        p.put(JConstants.EDIT_DISTANCE, eD);
+        //</editor-fold>
+
+        List<Example> BD = JUtils.loadExamples(args[0]);
+        MASet sm = new MASet();
+
+        MAResult setMean = sm.getMean(BD, null, p);
+        System.out.println("SetMedian AvgDist: " + setMean.sumDist / BD.size() + " TotalDist: " + (setMean.totalDist));
+        System.out.println(setMean.meanExample.toString());
+
     }
 
 }

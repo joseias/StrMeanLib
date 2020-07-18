@@ -1,6 +1,8 @@
 package strmean.malgorithms;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -77,7 +79,6 @@ public class MAJRStatistical extends MAlgorithm {
         //<editor-fold defaultstate="collapsed" desc="computing distances and stats">
         OpStats opStatsCandidate = this.testExample(bestExample, BD, Float.MAX_VALUE, p);
         totalDist = totalDist + opStatsCandidate.totalDist;
-
         opStatsBestExample = opStatsCandidate;
 
         procExamples.put(new String(bestExample.sequence), bestExample);
@@ -224,9 +225,12 @@ public class MAJRStatistical extends MAlgorithm {
 
         try {
 
-            String inpath = args[0];
-            String outpath = args[1];
-
+            Path inpath = Paths.get(args[0]);
+            Path outpath = Paths.get(args[1]);
+            String outname = outpath.getFileName().toString();
+            String outdir = outpath.getParent().toString();
+            String sep = System.getProperty("file.separator");
+                    
             //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
             Properties p = JUtils.loadProperties();
             String sdType = p.getProperty(JConstants.SYMBOL_DIF);
@@ -238,20 +242,20 @@ public class MAJRStatistical extends MAlgorithm {
             p.put(JConstants.EDIT_DISTANCE, eD);
             //</editor-fold>
 
-            List<Example> BD = JUtils.loadExamples(inpath);
-            PrintStream oplog;
-            PrintStream ps = new PrintStream(outpath);
-
-            oplog = new PrintStream(outpath + ".log");
-            p.put(JConstants.LOG_FILE, oplog);
+            List<Example> BD = JUtils.loadExamples(inpath.toString());
+            
+            PrintStream psout = new PrintStream(outpath.toString());
+            PrintStream pslog;
+            pslog = new PrintStream(outdir+sep+outname+".log");
+            p.put(JConstants.LOG_FILE, pslog);
             int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
 
             MAJRStatistical js = new MAJRStatistical();
             MASet sm = new MASet();
-            MAResult setMean = sm.getMean(BD, null, p);
 
-            ps.println("SetMedian AvgDist: " + setMean.sumDist / BD.size() + " TotalDist: " + setMean.totalDist);
-            ps.println(setMean.meanExample.toString());
+            MAResult setMean = sm.getMean(BD, null, p);
+            psout.println("SetMedian AvgDist: " + setMean.sumDist / BD.size() + " TotalDist: " + setMean.totalDist);
+            psout.println(setMean.meanExample.toString());
 
             long start = System.currentTimeMillis();
             MAResult newMean = js.getMean(BD, setMean.meanExample, p);
@@ -261,14 +265,15 @@ public class MAJRStatistical extends MAlgorithm {
             double median = newMean.sumDist / BD.size();
             double stdv = JMathUtils.round(JMathUtils.getStdv(newMean.distances, median), precision);
 
-            ps.println("Mean AvgDist: " + newMean.sumDist / BD.size() + " TotalDist: " + totalDist + " Stdv: " + stdv);
-            ps.println(newMean.meanExample.toString());
-            ps.println("PFO " + (end - start));
+            psout.println("Mean AvgDist: " + median + " TotalDist: " + totalDist + " AddDist: " + newMean.totalDist + " Stdv: " + stdv);
+            psout.println(newMean.meanExample.toString());
+            psout.println("PFO " + (end - start));
 
             newMean.opPosList.forEach((s) -> {
-                ps.println(s);
+                psout.println(s);
             });
-            oplog.close();
+            pslog.close();
+            psout.close();
         } catch (Exception e) {
             System.err.print(e.getMessage());
         }
