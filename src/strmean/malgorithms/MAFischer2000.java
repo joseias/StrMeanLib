@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import javax.management.InvalidAttributeValueException;
 import strmean.data.EDResult;
 import strmean.data.Example;
 import strmean.data.MAResult;
@@ -31,10 +32,14 @@ public class MAFischer2000 extends MAlgorithm {
     OpStats opStatsTemplate;
 
     @Override
-    public MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception {
+    public MAResult getMean(List<Example> iset, Example seed, Properties p) throws Exception {
 
         //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         opStatsTemplate = JUtils.newInstance(OpStats.class, p.getProperty(JConstants.OPS_STAT_EVALUATOR));
+        
+        if(!(opStatsTemplate instanceof strmean.opstateval.OpStatsJR)){
+            throw new InvalidAttributeValueException("Review config " + this.getClass().getCanonicalName() + " and subclasses requires -> " + strmean.opstateval.OpStatsJR.class.getCanonicalName());
+        }
         //</editor-fold>
         boolean improved;
         Example actualCandidate = new Example(seed);
@@ -47,7 +52,7 @@ public class MAFischer2000 extends MAlgorithm {
 
         int totalDist = 0;
         //<editor-fold defaultstate="collapsed" desc="computing distances and stats">
-        opStatsCandidate = this.testExample(bestExample, BD, Float.MAX_VALUE, p);
+        opStatsCandidate = this.testExample(bestExample, iset, Float.MAX_VALUE, p);
         totalDist = totalDist + opStatsCandidate.totalDist;
         opStatsBestExample = opStatsCandidate;
 
@@ -57,7 +62,7 @@ public class MAFischer2000 extends MAlgorithm {
             improved = false;
 
             //<editor-fold defaultstate="collapsed" desc="select the operations to be applied">
-            ops = this.selectOperations(opStatsCandidate, BD.size(), p);
+            ops = this.selectOperations(opStatsCandidate, iset.size(), p);
 
             //</editor-fold>
             //<editor-fold defaultstate="collapsed" desc="get the new incumbent">
@@ -68,7 +73,7 @@ public class MAFischer2000 extends MAlgorithm {
             String key = new String(actualCandidate.sequence);
             if (!procExamples.containsKey(key)) {
                 /* if can be found in the table, shall not be the better than bestExample*/
-                opStatsCandidate = this.testExample(actualCandidate, BD,opStatsBestExample.sumDist, p);
+                opStatsCandidate = this.testExample(actualCandidate, iset, opStatsBestExample.sumDist, p);
                 totalDist = totalDist + opStatsCandidate.totalDist;
 
                 procExamples.put(key, actualCandidate);
@@ -101,23 +106,23 @@ public class MAFischer2000 extends MAlgorithm {
      * reflection...
      *
      * @param candidate
-     * @param BD
+     * @param iset
      * @param thresholdDist
      * @param p
      * @return
      */
-    protected OpStats testExample(Example candidate, List<Example> BD, float thresholdDist, Properties p) {
+    protected OpStats testExample(Example candidate, List<Example> iset, float thresholdDist, Properties p) {
 
         //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
 
         OpStats opStats = opStatsTemplate.newInstance();
-        opStats.init(candidate, ed._sd, BD.size());
+        opStats.init(candidate, ed._sd, iset.size());
 
         EDResult edR;
         int index = 0;
-        for (Example e : BD) {
+        for (Example e : iset) {
             edR = ed.dEdition(candidate, e, true);
             opStats.totalDist++;
             opStats.sumDist = opStats.sumDist + edR.dist;
@@ -142,7 +147,7 @@ public class MAFischer2000 extends MAlgorithm {
     /**
      * Given all the possible edit operations, return the best for each
      * position.
-     * 
+     *
      * @param opStats
      * @param DBSize
      * @param p
@@ -244,15 +249,15 @@ public class MAFischer2000 extends MAlgorithm {
 
     }
 
-    public static void main(String[] args) throws Exception {
-      JUtils.initLogger();
+    public static void main(String[] args) {
+        JUtils.initLogger();
 
         try {
 
             Path inpath = Paths.get(args[0]);
             Path outpath = Paths.get(args[1]);
             String outname = outpath.getFileName().toString();
-            String outdir = outpath.getParent().toString();
+            String outdir = outpath.getParent() != null ? outpath.getParent().toString() : ".";
             String sep = System.getProperty("file.separator");
 
             //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
@@ -266,44 +271,45 @@ public class MAFischer2000 extends MAlgorithm {
             p.put(JConstants.EDIT_DISTANCE, eD);
             //</editor-fold>
 
-            List<Example> BD = JUtils.loadExamples(inpath.toString());      
-            
+            List<Example> iset = JUtils.loadExamples(inpath.toString());
+
             PrintStream psout = new PrintStream(outpath.toString());
             PrintStream pslog;
-            pslog = new PrintStream(outdir+sep+outname+".log");
+            pslog = new PrintStream(outdir + sep + outname + ".log");
             p.put(JConstants.LOG_FILE, pslog);
             int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
 
             MAFischer2000 js = new MAFischer2000();
             MASet sm = new MASet();
-            
-            MAResult setMean = sm.getMean(BD, null, p);
-            double median = setMean.sumDist / BD.size();
+
+            MAResult setMean = sm.getMean(iset, null, p);
+            double median = setMean.sumDist / iset.size();
             int totalDist = setMean.totalDist;
             double stdv = JMathUtils.round(JMathUtils.getStdv(setMean.distances, median), precision);
             psout.println("SetMedian AvgDist: " + median + " TotalDist: " + totalDist + " Stdv: " + stdv);
             psout.println(setMean.meanExample.toString());
 
-
-            MAResult newMeanE = js.getMean(BD, new Example("-", ""), p);
-            median = newMeanE.sumDist / BD.size();
+            MAResult newMeanE = js.getMean(iset, new Example("-", ""), p);
+            median = newMeanE.sumDist / iset.size();
             totalDist = newMeanE.totalDist;
             stdv = JMathUtils.round(JMathUtils.getStdv(newMeanE.distances, median), precision);
             psout.println("Empty AvgDist: " + median + " TotalDist: " + totalDist + " Stdv: " + stdv);
             psout.println(newMeanE.meanExample.toString());
-            
-            
-            MAResult newMeanM = js.getMean(BD, setMean.meanExample, p);
-            median = newMeanM.sumDist / BD.size();
+
+            MAResult newMeanM = js.getMean(iset, setMean.meanExample, p);
+            median = newMeanM.sumDist / iset.size();
             totalDist = newMeanM.totalDist + setMean.totalDist;
             stdv = JMathUtils.round(JMathUtils.getStdv(newMeanM.distances, median), precision);
             psout.println("Mean AvgDist: " + median + " TotalDist: " + totalDist + " AddDist: " + newMeanM.totalDist + " Stdv: " + stdv);
             psout.println(newMeanM.meanExample.toString());
-            
+
             pslog.close();
             psout.close();
         } catch (Exception e) {
-            System.err.print(e.getMessage());
+            System.err.println(e.getMessage());
+            for (StackTraceElement sse : e.getStackTrace()) {
+                System.err.println(sse.toString());
+            }
         }
     }
 }

@@ -22,22 +22,20 @@ import strmean.main.JConstants;
 import strmean.main.JMathUtils;
 import strmean.main.JUtils;
 
-
 /**
- * Implements a generic one-edit-at-a-time perturbation-based algorithm for the median string problem.
- * Different algorithms can be instantiated by implementing different quality metrics
- * for the operations.
- * Described in:
- * ABREU, J. y J.R. RICO-JUAN, .
- * "A new iterative algorithm for computing a quality approximate median of strings based on edit operations".
- * Pattern Recognition Letters. 2014, vol 36, pp. 74 - 80.
+ * Implements a generic one-edit-at-a-time perturbation-based algorithm for the
+ * median string problem. Different algorithms can be instantiated by
+ * implementing different quality metrics for the operations. Described in:
+ * ABREU, J. y J.R. RICO-JUAN, . "A new iterative algorithm for computing a
+ * quality approximate median of strings based on edit operations". Pattern
+ * Recognition Letters. 2014, vol 36, pp. 74 - 80.
  */
 public class MAJRStatistical extends MAlgorithm {
 
     OpStats opStatsTemplate;
 
     @Override
-    public MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception {
+    public MAResult getMean(List<Example> iset, Example seed, Properties p) throws Exception {
 
         //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         PrintStream oplog = (PrintStream) p.get(JConstants.LOG_FILE);
@@ -77,7 +75,7 @@ public class MAJRStatistical extends MAlgorithm {
         int totalDist = 0;
 
         //<editor-fold defaultstate="collapsed" desc="computing distances and stats">
-        OpStats opStatsCandidate = this.testExample(bestExample, BD, Float.MAX_VALUE, p);
+        OpStats opStatsCandidate = this.testExample(bestExample, iset, Float.MAX_VALUE, p);
         totalDist = totalDist + opStatsCandidate.totalDist;
         opStatsBestExample = opStatsCandidate;
 
@@ -121,17 +119,17 @@ public class MAJRStatistical extends MAlgorithm {
                     String key = new String(actualCandidate.sequence);
                     if (!procExamples.containsKey(key)) {
                         /* if can be found in the table, shall not be the better than bestExample*/
-                        opStatsCandidate = this.testExample(actualCandidate, BD, opStatsBestExample.sumDist, p);
+                        opStatsCandidate = this.testExample(actualCandidate, iset, opStatsBestExample.sumDist, p);
                         totalDist = totalDist + opStatsCandidate.totalDist;
 
                         procExamples.put(key, actualCandidate);
 
                         if (opStatsBestExample.sumDist > opStatsCandidate.sumDist) {
-                            double meanOld = JMathUtils.round(opStatsBestExample.sumDist / BD.size(), precision);
-                            double meanNew = JMathUtils.round(opStatsCandidate.sumDist / BD.size(), precision);
+                            double meanOld = JMathUtils.round(opStatsBestExample.sumDist / iset.size(), precision);
+                            double meanNew = JMathUtils.round(opStatsCandidate.sumDist / iset.size(), precision);
                             double stdvNew = JMathUtils.round(JMathUtils.getStdv(opStatsCandidate.distances, meanNew), precision);
 
-                            double expectedV = JMathUtils.round(op.opInfo.quality / BD.size(), precision);
+                            double expectedV = JMathUtils.round(op.opInfo.quality / iset.size(), precision);
                             double deltha = JMathUtils.round((meanOld - meanNew), precision);
 
                             bestExample = actualCandidate;
@@ -182,23 +180,23 @@ public class MAJRStatistical extends MAlgorithm {
      * reflection...
      *
      * @param candidate
-     * @param BD
+     * @param iset
      * @param thresholdDist
      * @param p
      * @return
      */
-    protected OpStats testExample(Example candidate, List<Example> BD, float thresholdDist, Properties p) {
+    protected OpStats testExample(Example candidate, List<Example> iset, float thresholdDist, Properties p) {
 
         //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
         EditDistance ed = (EditDistance) p.get(JConstants.EDIT_DISTANCE);
         //</editor-fold>
 
         OpStats opStats = opStatsTemplate.newInstance();
-        opStats.init(candidate, ed._sd, BD.size());
+        opStats.init(candidate, ed._sd, iset.size());
 
         EDResult edR;
         int index = 0;
-        for (Example e : BD) {
+        for (Example e : iset) {
             edR = ed.dEdition(candidate, e, true);
             opStats.totalDist++;
             opStats.sumDist = opStats.sumDist + edR.dist;
@@ -228,9 +226,9 @@ public class MAJRStatistical extends MAlgorithm {
             Path inpath = Paths.get(args[0]);
             Path outpath = Paths.get(args[1]);
             String outname = outpath.getFileName().toString();
-            String outdir = outpath.getParent().toString();
+            String outdir = outpath.getParent() != null ? outpath.getParent().toString() : ".";
             String sep = System.getProperty("file.separator");
-                    
+
             //<editor-fold defaultstate="collapsed" desc="injecting dependencies">
             Properties p = JUtils.loadProperties();
             String sdType = p.getProperty(JConstants.SYMBOL_DIF);
@@ -242,27 +240,27 @@ public class MAJRStatistical extends MAlgorithm {
             p.put(JConstants.EDIT_DISTANCE, eD);
             //</editor-fold>
 
-            List<Example> BD = JUtils.loadExamples(inpath.toString());
-            
+            List<Example> iset = JUtils.loadExamples(inpath.toString());
+
             PrintStream psout = new PrintStream(outpath.toString());
             PrintStream pslog;
-            pslog = new PrintStream(outdir+sep+outname+".log");
+            pslog = new PrintStream(outdir + sep + outname + ".log");
             p.put(JConstants.LOG_FILE, pslog);
             int precision = Integer.parseInt(p.getProperty(JConstants.PRECISION, JConstants.DEFAULT_PRECISION));
 
             MAJRStatistical js = new MAJRStatistical();
             MASet sm = new MASet();
 
-            MAResult setMean = sm.getMean(BD, null, p);
-            psout.println("SetMedian AvgDist: " + setMean.sumDist / BD.size() + " TotalDist: " + setMean.totalDist);
+            MAResult setMean = sm.getMean(iset, null, p);
+            psout.println("SetMedian AvgDist: " + setMean.sumDist / iset.size() + " TotalDist: " + setMean.totalDist);
             psout.println(setMean.meanExample.toString());
 
             long start = System.currentTimeMillis();
-            MAResult newMean = js.getMean(BD, setMean.meanExample, p);
+            MAResult newMean = js.getMean(iset, setMean.meanExample, p);
             long end = System.currentTimeMillis();
 
             int totalDist = newMean.totalDist + setMean.totalDist;
-            double median = newMean.sumDist / BD.size();
+            double median = newMean.sumDist / iset.size();
             double stdv = JMathUtils.round(JMathUtils.getStdv(newMean.distances, median), precision);
 
             psout.println("Mean AvgDist: " + median + " TotalDist: " + totalDist + " AddDist: " + newMean.totalDist + " Stdv: " + stdv);
@@ -275,7 +273,10 @@ public class MAJRStatistical extends MAlgorithm {
             pslog.close();
             psout.close();
         } catch (Exception e) {
-            System.err.print(e.getMessage());
+            System.err.println(e.getMessage());
+            for (StackTraceElement sse : e.getStackTrace()) {
+                System.err.println(sse.toString());
+            }
         }
     }
 }

@@ -32,14 +32,14 @@ public class Main {
         p.put(JConstants.EDIT_DISTANCE, eD);
         //</editor-fold>
 
-        List<Example> BD = JUtils.loadExamples(args[0]);
+        List<Example> iset = JUtils.loadExamples(args[0]);
         Example candidateMean = new Example("A", "3333445455554554555555555554545456556765555565556555667777011111111111211007777777777776665566655656676777011111111212122121121122121212122121221122222232");
 
         double totalDist = 0;
-        for (Example e : BD) {
+        for (Example e : iset) {
             totalDist = totalDist + eD.dEdition(candidateMean, e, false).dist;
         }
-        totalDist = totalDist / BD.size();
+        totalDist = totalDist / iset.size();
 
         System.out.println("AvgDist: " + totalDist);
 
@@ -95,16 +95,16 @@ public class Main {
         p.put(JConstants.EDIT_DISTANCE, eD);
         //</editor-fold>
 
-        List<Example> BD = JUtils.loadExamples(args[0]);
+        List<Example> iset = JUtils.loadExamples(args[0]);
 
         MAJRStatistical js = new MAJRStatistical();
 
         /*Values for total dist and set median were previously computed to speed up the debug*/
         Example setMeanF = new Example("F", "3333333434655666677677778777777777777676555555543323332323343333345546676777777776777777766555565566565556656777788112111111112112211111122121111121121123223333323333333332333");
 
-        MAResult newMean = js.getMean(BD, setMeanF, p);
+        MAResult newMean = js.getMean(iset, setMeanF, p);
         int totalDist = newMean.totalDist + 142506;
-        System.out.println("Mean AvgDist: " + newMean.sumDist / BD.size() + " TotalDist: " + totalDist);
+        System.out.println("Mean AvgDist: " + newMean.sumDist / iset.size() + " TotalDist: " + totalDist);
         System.out.println(newMean.meanExample.toString());
 
 //        System.out.println("Press Enter to exit...");

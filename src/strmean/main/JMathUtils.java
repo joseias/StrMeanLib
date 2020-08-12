@@ -41,8 +41,8 @@ public class JMathUtils {
             throw new IllegalArgumentException();
         }
 
-        BigDecimal bd = new BigDecimal(value);
-        bd = bd.setScale(precision, RoundingMode.HALF_UP);
-        return bd.doubleValue();
+        BigDecimal iset = new BigDecimal(value);
+        iset = iset.setScale(precision, RoundingMode.HALF_UP);
+        return iset.doubleValue();
     }
 }

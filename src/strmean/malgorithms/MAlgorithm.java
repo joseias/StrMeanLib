@@ -6,10 +6,9 @@ import strmean.data.Example;
 import strmean.data.MAResult;
 
 /**
- *
  * @author jabreu
  */
 public abstract class MAlgorithm {
 
-    public abstract MAResult getMean(List<Example> BD, Example seed, Properties p) throws Exception;
+    public abstract MAResult getMean(List<Example> iset, Example seed, Properties p) throws Exception;
 }

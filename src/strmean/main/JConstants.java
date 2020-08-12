@@ -17,6 +17,7 @@ public class JConstants {
     public static final String LOG_FILE = "LOG_FILE";
     public static final String MIN_FREC = "MIN_FREQUENCY";
     public static final String PRUNE_NEG_QUALITY = "PRUNE_NEG_QUALITY";
+    public static final String MULTI_DATA = "MULTI_DATA";
 
     public class EDDamerauLevensteinConst {
 
