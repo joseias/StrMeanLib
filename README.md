@@ -28,7 +28,7 @@ Set OPS_STAT_EVALUATOR=strmean.opstateval.OpStatsJR to use this algorithm.
 ### Citation 
 StrMeanLib is provided as free open-source software. If you have used ProMetrics in your StrMeanLib, authors will be grateful if you fill and submit to [joseias@gmail.com](joseias@gmail.com) the following [Usage-Acknowledgment-StrMeanLib](https://github.com/joseias/StrMeanLib/blob/master/Usage-Acknowledgment-StrMeanLib.docx) acknowledging our contribution. If citing, please reference to:
 
-Abreu J. and Rico-Juan J, “A New Iterative Algorithm for Computing a Quality Approximate Median of Strings based on Edit Operations.” Pattern Recognition Letters. Vol. 36, pp. 74-80, 2014.
+Abreu J. and Rico-Juan J, “[A New Iterative Algorithm for Computing a Quality Approximate Median of Strings based on Edit Operations.](https://www.sciencedirect.com/science/article/pii/S0167865513003504)” Pattern Recognition Letters. Vol. 36, pp. 74-80, 2014.
 
 
 ### Related works
