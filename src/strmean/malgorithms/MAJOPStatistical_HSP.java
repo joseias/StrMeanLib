@@ -20,9 +20,16 @@ import strmean.main.JConstants;
 import strmean.main.JMathUtils;
 import strmean.main.JUtils;
 
+
 /**
- * Variation of MAJRStatistical to include HSP search for the initial string
+ * Implements a modification of the one-edit-at-a-time perturbation-based algorithm
+ * for the median string described in [1] that uses Half Space Proximal (HSP) test for the initial string.
+ * 
+ * [1] ABREU, J. y J.R. RICO-JUAN, . "A new iterative algorithm for computing a
+ * quality approximate median of strings based on edit operations". Pattern
+ * Recognition Letters. 2014, vol 36, pp. 74 - 80.
  */
+
 public class MAJOPStatistical_HSP extends MAlgorithm {
 
     OpStats opStatsTemplate;
@@ -69,7 +76,6 @@ public class MAJOPStatistical_HSP extends MAlgorithm {
         procExamples.put(new String(bestExample.sequence), bestExample);
         //</editor-fold>
         do {
-//            System.err.println(epoch);
             cEpoch++;
             changed = false;
 
@@ -77,7 +83,7 @@ public class MAJOPStatistical_HSP extends MAlgorithm {
             ops = opStatsCandidate.getOperations();
 
             //<editor-fold defaultstate="collapsed" desc="eliminar opp con quality menor que 0">
-            //modificado 171114 eliminar opp con quality < 0
+            // avoid opp quality < 0
             int ip = 0;
             while (ip < ops.size()) {
                 if (ops.get(ip).opInfo.quality <= 0) {
